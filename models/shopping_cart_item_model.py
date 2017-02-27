@@ -27,6 +27,7 @@ class ShoppingCartItemModel(BasicModel):
 
     title = Fields.StringProperty(verbose_name=u'產品名稱')
     product_no = Fields.StringProperty(verbose_name=u'產品編號')
+    product_image = Fields.StringProperty(verbose_name=u'產品圖片', default=u'')
     sku_full_name = Fields.StringProperty(verbose_name=u'產品最小庫存名稱')
     spec_full_name = Fields.StringProperty(verbose_name=u'完整規格名稱')
     price = Fields.FloatProperty(verbose_name=u'銷售價格', default=-1)
@@ -52,14 +53,15 @@ class ShoppingCartItemModel(BasicModel):
             item._sku = sku
             item.sku = sku.key
             item.user = user.key
-            item.title = product.title
-            item.product_no = product.product_no
-            item.sku_full_name = sku.sku_full_name
-            item.spec_full_name = sku.spec_full_name
-            if sku.use_price:
-                item.price = sku.price
-            else:
-                item.price = product.price
+        item.title = product.title
+        item.product_no = product.product_no
+        item.product_image = product.image
+        item.sku_full_name = sku.sku_full_name
+        item.spec_full_name = sku.spec_full_name
+        if sku.use_price:
+            item.price = sku.price
+        else:
+            item.price = product.price
             item.order_type_value = order_type_value
         if order_type_value == 0:
             item.order_type = u'現貨'
@@ -70,21 +72,26 @@ class ShoppingCartItemModel(BasicModel):
             else:
                 item.expired_time = time() + 525600
             can_use_quantity = sku.quantity - sku.estimate + int(item.quantity_has_count)
-            if can_use_quantity >= quantity:
+            if can_use_quantity >= quantity and product.can_order:
                 item.can_add_to_order = True
                 item.quantity = quantity
                 item.quantity_has_count = quantity
-                sku.estimate = sku.estimate - abs(int(item.quantity_has_count)) + abs(quantity)
-                sku.put()
             else:
                 item.can_add_to_order = False
-                item.quantity = -1
+                item.quantity = 0
                 item.quantity_has_count = 0
+            sku.estimate = sku.estimate - abs(int(item.quantity_has_count)) + abs(item.quantity)
+            sku.put()
         else:
-            item.can_add_to_order = True
-            item.quantity = quantity
-            item.order_type = u'預購'
-            sku.pre_order_quantity = sku.pre_order_quantity - abs(int(item.quantity_has_count)) + abs(quantity)
+            if product.can_pre_order:
+                item.can_add_to_order = True
+                item.quantity = quantity
+                item.order_type = u'預購'
+            else:
+                item.can_add_to_order = False
+                item.quantity = 0
+                item.order_type = u'預購'
+            sku.pre_order_quantity = sku.pre_order_quantity - abs(int(item.quantity_has_count)) + abs(item.quantity)
             sku.put()
         item.put()
         return item

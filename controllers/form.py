@@ -33,6 +33,10 @@ class Form(Controller):
         if self.application_user is None:
             self.context['message'] = u'請先登入。'
             return True
+        self.sku = self.params.get_ndb_record('sku')
+        if self.sku is None or self.sku.can_be_purchased == False:
+            self.context['message'] = u'該品項不存在或無法購買'
+            return True
 
     @route
     @add_authorizations(auth.check_user)
@@ -40,16 +44,12 @@ class Form(Controller):
     def add_item(self):
         if self.check():
             return
-        sku = self.params.get_ndb_record('sku')
-        if sku is None or sku.can_be_purchased == False:
-            self.context['message'] = u'該品項不存在或無法購買'
-            return
         order_type = 0
         if self.params.get_string('order_type') == u'pre_order':
             order_type = 1
-        m = self.meta.Model.get_or_create(self.application_user, sku, self.params.get_integer('quantity'), order_type)
-        if m.quantity < 0:
-            self.context['message'] = u'失敗，庫存量不足。'
+        m = self.meta.Model.get_or_create(self.application_user, self.sku, self.params.get_integer('quantity'), order_type)
+        if m.can_add_to_order is False:
+            self.context['message'] = u'失敗，庫存量不足或已停售。'
             return
         self.context['data'] = {'result': 'success'}
         self.context['message'] = u'已成功加入。'
@@ -58,16 +58,19 @@ class Form(Controller):
     @add_authorizations(auth.check_user)
     @route_with(name='form:shopping_cart:remove_item')
     def remove_item(self):
-        self.check()
+        if self.check():
+            return
 
     @route
     @add_authorizations(auth.check_user)
     @route_with(name='form:shopping_cart:change_quantity')
     def change_quantity(self):
-        self.check()
+        if self.check():
+            return
 
     @route
     @add_authorizations(auth.check_user)
     @route_with(name='form:shopping_cart:check_sku')
     def check_sku(self):
-        self.check()
+        if self.check():
+            return
