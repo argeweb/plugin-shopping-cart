@@ -27,6 +27,7 @@ class ShoppingCartItemModel(BasicModel):
 
     title = Fields.StringProperty(verbose_name=u'產品名稱')
     product_no = Fields.StringProperty(verbose_name=u'產品編號')
+    product_name = Fields.StringProperty(verbose_name=u'產品圖片', default=u'')
     product_image = Fields.StringProperty(verbose_name=u'產品圖片', default=u'')
     sku_full_name = Fields.StringProperty(verbose_name=u'產品最小庫存名稱')
     spec_full_name = Fields.StringProperty(verbose_name=u'完整規格名稱')
@@ -56,6 +57,7 @@ class ShoppingCartItemModel(BasicModel):
         item.title = product.title
         item.product_no = product.product_no
         item.product_image = product.image
+        item.product_name = product.name
         item.sku_full_name = sku.sku_full_name
         item.spec_full_name = sku.spec_full_name
         if sku.use_price:
@@ -72,6 +74,7 @@ class ShoppingCartItemModel(BasicModel):
             else:
                 item.expired_time = time() + 525600
             can_use_quantity = sku.quantity - sku.estimate + int(item.quantity_has_count)
+            old_quantity_has_count = item.quantity_has_count
             if can_use_quantity >= quantity and product.can_order:
                 item.can_add_to_order = True
                 item.quantity = quantity
@@ -80,7 +83,7 @@ class ShoppingCartItemModel(BasicModel):
                 item.can_add_to_order = False
                 item.quantity = 0
                 item.quantity_has_count = 0
-            sku.estimate = sku.estimate - abs(int(item.quantity_has_count)) + abs(item.quantity)
+            sku.estimate = sku.estimate - abs(old_quantity_has_count) + abs(item.quantity)
             sku.put()
         else:
             if product.can_pre_order:
@@ -97,6 +100,13 @@ class ShoppingCartItemModel(BasicModel):
         return item
 
     @classmethod
+    def all_with_user(cls, user):
+        key = None
+        if user is not None:
+            key = user.key
+        return cls.query(cls.user==key).order(-cls.sort)
+
+    @classmethod
     def before_delete(cls, key):
         item = key.get()
         if item.order_type_value == 0:
@@ -105,12 +115,19 @@ class ShoppingCartItemModel(BasicModel):
                 sku.estimate = sku.estimate - item.quantity_has_count
                 sku.put()
 
+    def quantity_can_be_order(self, user=None, sku=None):
+        if sku is None:
+            sku = self.sku.get()
+        if self.order_type_value > 0:
+            return 999
+        if user:
+            return sku.quantity - sku.estimate + self.quantity
+        return sku.quantity - sku.estimate
+
 
 def get_quantity_with_shopping_car(sku, user=None, *args, **kwargs):
-    if sku is None:
-        return 0
     if user:
         cart_item = ShoppingCartItemModel.get(user, sku)
         if cart_item:
-            return sku.quantity - sku.estimate + cart_item.quantity
+            return cart_item.quantity_can_be_order(user, sku)
     return sku.quantity - sku.estimate

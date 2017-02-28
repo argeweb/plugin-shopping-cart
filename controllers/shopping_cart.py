@@ -22,5 +22,3 @@ class ShoppingCart(Controller):
     class Scaffold:
         display_in_list = ('title_lang_zhtw', 'name')
 
-    def admin_list(self):
-        return scaffold.list(self)

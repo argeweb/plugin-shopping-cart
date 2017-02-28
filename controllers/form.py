@@ -26,15 +26,15 @@ class Form(Controller):
     class Scaffold:
         display_in_form = ('user_name', 'account', 'is_enable', 'sort', 'created', 'modified')
 
-    def check(self):
+    def check(self, allow_get=False):
         self.context['data'] = {'result': 'failure'}
-        if self.request.method != 'POST':
+        if allow_get is False and self.request.method != 'POST':
             return self.abort(404)
         if self.application_user is None:
             self.context['message'] = u'請先登入。'
             return True
         self.sku = self.params.get_ndb_record('sku')
-        if self.sku is None or self.sku.can_be_purchased == False:
+        if self.sku is None:
             self.context['message'] = u'該品項不存在或無法購買'
             return True
 
@@ -58,8 +58,10 @@ class Form(Controller):
     @add_authorizations(auth.check_user)
     @route_with(name='form:shopping_cart:remove_item')
     def remove_item(self):
-        if self.check():
+        if self.check(True):
             return
+        self.context['message'] = u'已刪除'
+        return scaffold.delete(self, self.sku.key)
 
     @route
     @add_authorizations(auth.check_user)
