@@ -61,14 +61,24 @@ class Form(Controller):
         if self.check(True):
             return
         self.context['message'] = u'已刪除'
+        self.context['data'] = {'result': 'success'}
         return scaffold.delete(self, self.sku.key)
 
     @route
     @add_authorizations(auth.check_user)
     @route_with(name='form:shopping_cart:change_quantity')
     def change_quantity(self):
-        if self.check():
-            return
+        self.context['data'] = {'result': 'failure'}
+        if self.request.method != 'POST':
+            return self.abort(404)
+        length = self.params.get_integer('length')
+        for index in xrange(0, length):
+            item = self.params.get_ndb_record('key_%s' % index)
+            if item is not None:
+                item.change_quantity(self.params.get_integer('quantity_%s' % index))
+                item.put()
+        self.context['data'] = {'result': 'success'}
+        self.context['message'] = u'已更新'
 
     @route
     @add_authorizations(auth.check_user)

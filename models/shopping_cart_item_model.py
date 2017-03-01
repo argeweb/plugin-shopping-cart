@@ -51,51 +51,22 @@ class ShoppingCartItemModel(BasicModel):
         item = cls.query(cls.sku==sku.key, cls.user==user.key, cls.order_type_value==order_type_value).get()
         if item is None:
             item = cls()
-            item._sku = sku
             item.sku = sku.key
             item.user = user.key
+            item.order_type_value = order_type_value
+            if order_type_value == 0:
+                item.order_type = u'現貨'
+            else:
+                item.order_type = u'預購'
+        item._sku = sku
+        item._product = product
         item.title = product.title
         item.product_no = product.product_no
         item.product_image = product.image
         item.product_name = product.name
         item.sku_full_name = sku.sku_full_name
         item.spec_full_name = sku.spec_full_name
-        if sku.use_price:
-            item.price = sku.price
-        else:
-            item.price = product.price
-            item.order_type_value = order_type_value
-        if order_type_value == 0:
-            item.order_type = u'現貨'
-            namespace = product._key._Key__namespace
-            config = ProductConfigModel.find_by_name(namespace)
-            if config.stock_recover:
-                item.expired_time = time() + config.stock_recover_time
-            else:
-                item.expired_time = time() + 525600
-            can_use_quantity = sku.quantity - sku.estimate + int(item.quantity_has_count)
-            old_quantity_has_count = item.quantity_has_count
-            if can_use_quantity >= quantity and product.can_order:
-                item.can_add_to_order = True
-                item.quantity = quantity
-                item.quantity_has_count = quantity
-            else:
-                item.can_add_to_order = False
-                item.quantity = 0
-                item.quantity_has_count = 0
-            sku.estimate = sku.estimate - abs(old_quantity_has_count) + abs(item.quantity)
-            sku.put()
-        else:
-            if product.can_pre_order:
-                item.can_add_to_order = True
-                item.quantity = quantity
-                item.order_type = u'預購'
-            else:
-                item.can_add_to_order = False
-                item.quantity = 0
-                item.order_type = u'預購'
-            sku.pre_order_quantity = sku.pre_order_quantity - abs(int(item.quantity_has_count)) + abs(item.quantity)
-            sku.put()
+        item.check_quantity(quantity)
         item.put()
         return item
 
@@ -115,13 +86,56 @@ class ShoppingCartItemModel(BasicModel):
                 sku.estimate = sku.estimate - item.quantity_has_count
                 sku.put()
 
+    def change_quantity(self, quantity):
+        if hasattr(self, '_sku'):
+            sku = self._sku
+        else:
+            sku = self.sku.get()
+        if hasattr(self, '_product'):
+            product = self._product
+        else:
+            product = sku.product.get()
+        if sku.use_price:
+            self.price = sku.price
+        else:
+            self.price = product.price
+        if self.order_type_value == 0:
+            namespace = product._key._Key__namespace
+            config = ProductConfigModel.find_by_name(namespace)
+            if config.stock_recover:
+                self.expired_time = time() + config.stock_recover_time
+            else:
+                self.expired_time = time() + 525600
+            can_use_quantity = sku.quantity - sku.estimate + int(self.quantity_has_count)
+            old_quantity_has_count = self.quantity_has_count
+            if can_use_quantity >= quantity and product.can_order:
+                self.can_add_to_order = True
+                self.quantity = quantity
+                self.quantity_has_count = quantity
+            else:
+                self.can_add_to_order = False
+                self.quantity = 0
+                self.quantity_has_count = 0
+            sku.estimate = sku.estimate - abs(old_quantity_has_count) + abs(self.quantity)
+            sku.put()
+        else:
+            if product.can_pre_order:
+                self.can_add_to_order = True
+                self.quantity = quantity
+            else:
+                self.can_add_to_order = False
+                self.quantity = 0
+            sku.pre_order_quantity = sku.pre_order_quantity - abs(int(self.quantity_has_count)) + abs(self.quantity)
+            sku.put()
+
     def quantity_can_be_order(self, user=None, sku=None):
         if sku is None:
             sku = self.sku.get()
         if self.order_type_value > 0:
             return 999
         if user:
-            return sku.quantity - sku.estimate + self.quantity
+            if self.quantity is not None:
+                return sku.quantity - sku.estimate + self.quantity
         return sku.quantity - sku.estimate
 
 
