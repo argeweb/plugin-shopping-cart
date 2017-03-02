@@ -4,7 +4,7 @@
 # Created with YooLiang Technology (侑良科技).
 # Author: Qi-Liang Wen (温啓良）
 # Web: http://www.yooliang.com/
-# Date: 2015/7/12.
+# Date: 2017/3/1.
 
 from argeweb import ViewFunction
 from models.shopping_cart_item_model import get_quantity_with_shopping_car
