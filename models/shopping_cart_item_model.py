@@ -66,7 +66,7 @@ class ShoppingCartItemModel(BasicModel):
         item.product_name = product.name
         item.sku_full_name = sku.sku_full_name
         item.spec_full_name = sku.spec_full_name
-        item.check_quantity(quantity)
+        item.change_quantity(quantity)
         item.put()
         return item
 
