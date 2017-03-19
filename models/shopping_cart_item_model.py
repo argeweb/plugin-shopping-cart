@@ -135,13 +135,20 @@ class ShoppingCartItemModel(BasicModel):
             return 999
         if user:
             if self.quantity is not None:
-                return sku.quantity - sku.estimate + self.quantity
-        return sku.quantity - sku.estimate
+                if (sku.quantity - sku.estimate + self.quantity) > 0:
+                    return sku.quantity - sku.estimate + self.quantity
+        if (sku.quantity - sku.estimate) > 0:
+            return sku.quantity - sku.estimate
+        return 0
 
 
 def get_quantity_with_shopping_car(sku, user=None, *args, **kwargs):
     if user:
         cart_item = ShoppingCartItemModel.get(user, sku)
         if cart_item:
-            return cart_item.quantity_can_be_order(user, sku)
-    return sku.quantity - sku.estimate
+            q = cart_item.quantity_can_be_order(user, sku)
+            if q > 0:
+                return q
+    if (sku.quantity - sku.estimate) > 0:
+        return sku.quantity - sku.estimate
+    return 0
