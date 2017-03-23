@@ -11,7 +11,7 @@ from argeweb import Fields
 
 
 class ShoppingCartModel(BasicModel):
-    name = Fields.StringProperty(required=True, verbose_name=u'系統編號')
+    name = Fields.StringProperty(required=True, verbose_name=u'識別名稱')
     title = Fields.StringProperty(default=u'未命名', verbose_name=u'分類名稱')
     title_lang_zhtw = Fields.StringProperty(default=u'未命名', verbose_name=u'繁體中文分類名稱')
     title_lang_zhcn = Fields.StringProperty(default=u'未命名', verbose_name=u'簡體中文分類名稱')

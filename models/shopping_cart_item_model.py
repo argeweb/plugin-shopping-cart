@@ -21,7 +21,7 @@ class ShoppingCartItemModel(BasicModel):
             'title_lang_zhtw': u'標題',
             'content_lang_zhtw': u'內容',
         }
-    name = Fields.StringProperty(verbose_name=u'系統編號')
+    name = Fields.StringProperty(verbose_name=u'識別名稱')
     sku = Fields.KeyProperty(verbose_name=u'最小庫存單位', kind=StockKeepingUnitModel)
     user = Fields.KeyProperty(verbose_name=u'使用者', kind=ApplicationUserModel)
 
