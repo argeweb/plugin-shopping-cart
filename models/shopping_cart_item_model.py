@@ -32,6 +32,7 @@ class ShoppingCartItemModel(BasicModel):
     sku_full_name = Fields.StringProperty(verbose_name=u'產品最小庫存名稱')
     spec_full_name = Fields.StringProperty(verbose_name=u'完整規格名稱')
     price = Fields.FloatProperty(verbose_name=u'銷售價格', default=-1)
+    cost = Fields.FloatProperty(verbose_name=u'成本', default=0.0)
     quantity = Fields.IntegerProperty(verbose_name=u'數量', default=0)
     quantity_has_count = Fields.IntegerProperty(verbose_name=u'已計入庫存的數量', default=0)
     can_add_to_order = Fields.BooleanProperty(verbose_name=u'加至訂單中', default=False)
@@ -47,7 +48,7 @@ class ShoppingCartItemModel(BasicModel):
 
     @classmethod
     def get_or_create(cls, user, sku, quantity=0, order_type_value=0):
-        product = sku.product.get()
+        product = sku.product_object.get()
         item = cls.query(cls.sku==sku.key, cls.user==user.key, cls.order_type_value==order_type_value).get()
         if item is None:
             item = cls()
@@ -86,22 +87,31 @@ class ShoppingCartItemModel(BasicModel):
                 sku.estimate = sku.estimate - item.quantity_has_count
                 sku.put()
 
+    @property
+    def sku_instance(self):
+        if not hasattr(self, '_sku'):
+            self._sku = self.sku.get()
+        return self._sku
+
+    @property
+    def product_instance(self):
+        if not hasattr(self, '_product'):
+            self._product = self.sku_instance.product_object.get()
+        return self._product
+
     def change_quantity(self, quantity):
-        if hasattr(self, '_sku'):
-            sku = self._sku
-        else:
-            sku = self.sku.get()
-        if hasattr(self, '_product'):
-            product = self._product
-        else:
-            product = sku.product.get()
+        sku = self.sku_instance
+        product = self.product_instance
         if sku.use_price:
             self.price = sku.price
         else:
             self.price = product.price
+        if sku.use_cost:
+            self.cost = sku.cost
+        else:
+            self.cost = product.cost
         if self.order_type_value == 0:
-            namespace = product._key._Key__namespace
-            config = ProductConfigModel.find_by_name(namespace)
+            config = ProductConfigModel.find_by_product(product)
             if config.stock_recover:
                 self.expired_time = time() + config.stock_recover_time
             else:
