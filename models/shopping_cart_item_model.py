@@ -78,8 +78,8 @@ class ShoppingCartItemModel(BasicModel):
         item = key.get()
         if item.order_type_value == 0:
             if item.quantity > 0:
-                sku = item.sku.get()
-                sku.estimate = sku.estimate - item.quantity_has_count
+                sku = item.sku_instance
+                sku.change_estimate_quantity(item.quantity_has_count)
                 sku.put()
 
     @property
@@ -111,7 +111,7 @@ class ShoppingCartItemModel(BasicModel):
                 self.expired_time = time() + config.stock_recover_time
             else:
                 self.expired_time = time() + 525600
-            can_use_quantity = sku.quantity - sku.estimate + int(self.quantity_has_count)
+            can_use_quantity = sku.quantity_can_be_used + int(self.quantity_has_count)
             old_quantity_has_count = self.quantity_has_count
             if can_use_quantity >= quantity and product.can_order:
                 self.can_add_to_order = True
@@ -121,7 +121,7 @@ class ShoppingCartItemModel(BasicModel):
                 self.can_add_to_order = False
                 self.quantity = 0
                 self.quantity_has_count = 0
-            sku.estimate = sku.estimate - abs(old_quantity_has_count) + abs(self.quantity)
+            sku.change_estimate_quantity(sub_quantity=old_quantity_has_count, add_quantity=self.quantity)
             sku.put()
         else:
             if product.can_pre_order:
@@ -130,7 +130,7 @@ class ShoppingCartItemModel(BasicModel):
             else:
                 self.can_add_to_order = False
                 self.quantity = 0
-            sku.pre_order_quantity = sku.pre_order_quantity - abs(int(self.quantity_has_count)) + abs(self.quantity)
+            sku.change_pre_order_quantity(sub_quantity=int(self.quantity_has_count), add_quantity=self.quantity)
             sku.put()
 
     def quantity_can_be_order(self, user=None, sku=None):
@@ -138,13 +138,11 @@ class ShoppingCartItemModel(BasicModel):
             sku = self.sku.get()
         if self.order_type_value > 0:
             return 999
-        if user:
-            if self.quantity is not None:
-                if (sku.quantity - sku.estimate + self.quantity) > 0:
-                    return sku.quantity - sku.estimate + self.quantity
-        if (sku.quantity - sku.estimate) > 0:
-            return sku.quantity - sku.estimate
-        return 0
+        if user and self.quantity is not None:
+            c = sku.quantity_can_be_used + self.quantity
+            if c > 0:
+                return c
+        return sku.quantity_can_be_used
 
 
 def get_quantity_with_shopping_car(sku, user=None, *args, **kwargs):
@@ -154,6 +152,4 @@ def get_quantity_with_shopping_car(sku, user=None, *args, **kwargs):
             q = cart_item.quantity_can_be_order(user, sku)
             if q > 0:
                 return q
-    if (sku.quantity - sku.estimate) > 0:
-        return sku.quantity - sku.estimate
-    return 0
+    return sku.quantity_can_be_used
