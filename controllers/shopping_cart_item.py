@@ -18,7 +18,6 @@ class ShoppingCartItem(Controller):
     class Scaffold:
         display_in_list = ('user', 'order_type', 'title', 'spec_full_name', 'price', 'quantity', 'created')
 
-    @route_menu(list_name=u'backend', text=u'購物車項目', sort=1208, group=u'產品維護', need_hr=True)
     def admin_list(self):
         def query_factory_only_codefile(controller):
             m = self.meta.Model
