@@ -14,8 +14,5 @@ from argeweb.components.search import Search
 
 
 class ShoppingCart(Controller):
-    class Meta:
-        components = (scaffold.Scaffolding, Pagination, Search)
-
     class Scaffold:
         display_in_list = ('title_lang_zhtw', 'name')

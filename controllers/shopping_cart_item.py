@@ -12,9 +12,6 @@ from argeweb.components.search import Search
 
 
 class ShoppingCartItem(Controller):
-    class Meta:
-        components = (scaffold.Scaffolding, Pagination, Search)
-
     class Scaffold:
         display_in_list = ('user', 'order_type', 'title', 'spec_full_name', 'price', 'quantity', 'created')
 
