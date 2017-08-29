@@ -1,0 +1,12 @@
+- kind: ShoppingCartItemModel
+  properties:
+  - name: sort
+    direction: desc
+  - name: __key__
+    direction: desc
+
+- kind: ShoppingCartItemModel
+  properties:
+  - name: user
+  - name: sort
+    direction: desc

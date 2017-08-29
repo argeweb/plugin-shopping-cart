@@ -7,12 +7,9 @@
 # Date: 2017/3/1.
 
 
-from argeweb import Controller, scaffold, route_menu, route_with, route
-from argeweb.components.pagination import Pagination
-from argeweb.components.csrf import CSRF, csrf_protect
-from argeweb.components.search import Search
+from argeweb import Controller
 
 
 class ShoppingCart(Controller):
     class Scaffold:
-        display_in_list = ('title_lang_zhtw', 'name')
+        display_in_list = ['title_lang_zhtw', 'name']

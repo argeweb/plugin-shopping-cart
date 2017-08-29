@@ -13,7 +13,7 @@ from models import *
 ViewFunction.register(get_quantity_with_shopping_car)
 
 plugins_helper = {
-    'title': u'購物車模組',
+    'title': u'購物車',
     'desc': u'將產品及其 SKU 加入至會員帳戶中，並與 SKU 庫存量連動',
     'controllers': {
         'shopping_cart_item': {

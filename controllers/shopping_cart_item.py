@@ -6,14 +6,12 @@
 # Web: http://www.yooliang.com/
 # Date: 2017/3/1.
 
-from argeweb import Controller, scaffold, route_menu, route_with, route
-from argeweb.components.pagination import Pagination
-from argeweb.components.search import Search
+from argeweb import Controller, scaffold
 
 
 class ShoppingCartItem(Controller):
     class Scaffold:
-        display_in_list = ('user', 'order_type', 'title', 'spec_full_name', 'price', 'quantity', 'created')
+        display_in_list = ['user', 'order_type', 'title', 'spec_full_name', 'price', 'quantity', 'created']
 
     def admin_list(self):
         def query_factory_only_codefile(controller):

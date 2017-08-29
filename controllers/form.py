@@ -5,13 +5,11 @@
 # Author: Qi-Liang Wen (温啓良）
 # Web: http://www.yooliang.com/
 # Date: 2017/3/1.
-from datetime import datetime
-from argeweb import Controller, scaffold, route_menu, route_with, route, settings
+from argeweb import Controller, scaffold, route_with, route
 from argeweb import auth, add_authorizations
 from argeweb.components.pagination import Pagination
 from argeweb.components.csrf import CSRF, csrf_protect
 from argeweb.components.search import Search
-from plugins.mail import Mail
 from ..models.shopping_cart_item_model import ShoppingCartItemModel
 
 
@@ -22,9 +20,9 @@ class Form(Controller):
         Model = ShoppingCartItemModel
 
     class Scaffold:
-        display_in_form = ('user_name', 'account', 'is_enable', 'sort', 'created', 'modified')
+        display_in_form = ['user_name', 'account', 'is_enable', 'sort', 'created', 'modified']
 
-    def check(self, allow_get=False):
+    def check_with_sku(self, allow_get=False):
         self.context['data'] = {'result': 'failure'}
         if allow_get is False and self.request.method != 'POST':
             return self.abort(404)
@@ -40,12 +38,12 @@ class Form(Controller):
     @add_authorizations(auth.check_user)
     @route_with(name='form:shopping_cart:add_item')
     def add_item(self):
-        if self.check():
+        if self.check_with_sku():
             return
         order_type = 0
         if self.params.get_string('order_type') == u'pre_order':
             order_type = 1
-        m = self.meta.Model.get_or_create(self.application_user, self.sku, self.params.get_integer('quantity'), order_type)
+        m = self.meta.Model.get_or_create_with_sku(self.application_user, self.sku, self.params.get_integer('quantity'), order_type)
         if m.can_add_to_order is False:
             self.context['message'] = u'失敗，庫存量不足或已停售。'
             return
@@ -56,7 +54,7 @@ class Form(Controller):
     @add_authorizations(auth.check_user)
     @route_with(name='form:shopping_cart:remove_item')
     def remove_item(self):
-        if self.check(True):
+        if self.check_with_sku(True):
             return
         self.context['message'] = u'已刪除'
         self.context['data'] = {'result': 'success'}
@@ -82,5 +80,5 @@ class Form(Controller):
     @add_authorizations(auth.check_user)
     @route_with(name='form:shopping_cart:check_sku')
     def check_sku(self):
-        if self.check():
+        if self.check_with_sku():
             return
