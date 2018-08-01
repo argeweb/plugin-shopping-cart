@@ -15,12 +15,10 @@ from ..models.shopping_cart_item_model import ShoppingCartItemModel
 
 class Data(Controller):
     class Meta:
-        components = (scaffold.Scaffolding, Pagination, Search, CSRF)
         default_view = 'json'
         Model = ShoppingCartItemModel
 
     @route
-    @add_authorizations(auth.check_user)
     @route_with('/data/shopping_cart/items', name='data:shopping_cart:items')
     def items(self):
         cu = None
@@ -47,3 +45,10 @@ class Data(Controller):
                 'quantity': item.quantity,
             })
         self.context["data"] = data
+
+
+    @route
+    def freight(self):
+        self.context["data"] = {
+            'amount': 100
+        }
